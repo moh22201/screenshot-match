@@ -14,13 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      regions: {
+        Row: {
+          advantages: string | null
+          constraints: string | null
+          extraction_sites: string | null
+          grid_x: number
+          grid_y: number
+          id: number
+          industrial_land: string | null
+          market_access: string | null
+          name: string
+          owner_id: string | null
+          reserved_at: string | null
+          resources: string[] | null
+          start_conditions: string | null
+          status: string
+          terrain: string | null
+          transport: string | null
+          usage_fee: string | null
+          utilities: string | null
+        }
+        Insert: {
+          advantages?: string | null
+          constraints?: string | null
+          extraction_sites?: string | null
+          grid_x: number
+          grid_y: number
+          id: number
+          industrial_land?: string | null
+          market_access?: string | null
+          name: string
+          owner_id?: string | null
+          reserved_at?: string | null
+          resources?: string[] | null
+          start_conditions?: string | null
+          status?: string
+          terrain?: string | null
+          transport?: string | null
+          usage_fee?: string | null
+          utilities?: string | null
+        }
+        Update: {
+          advantages?: string | null
+          constraints?: string | null
+          extraction_sites?: string | null
+          grid_x?: number
+          grid_y?: number
+          id?: number
+          industrial_land?: string | null
+          market_access?: string | null
+          name?: string
+          owner_id?: string | null
+          reserved_at?: string | null
+          resources?: string[] | null
+          start_conditions?: string | null
+          status?: string
+          terrain?: string | null
+          transport?: string | null
+          usage_fee?: string | null
+          utilities?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_region: {
+        Args: { _region_id: number }
+        Returns: {
+          advantages: string | null
+          constraints: string | null
+          extraction_sites: string | null
+          grid_x: number
+          grid_y: number
+          id: number
+          industrial_land: string | null
+          market_access: string | null
+          name: string
+          owner_id: string | null
+          reserved_at: string | null
+          resources: string[] | null
+          start_conditions: string | null
+          status: string
+          terrain: string | null
+          transport: string | null
+          usage_fee: string | null
+          utilities: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "regions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
