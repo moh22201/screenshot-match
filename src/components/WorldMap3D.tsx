@@ -37,7 +37,7 @@ function Tile({ r, mine, selected, onSelect }: { r: Region; mine: boolean; selec
 
 export default function WorldMap3D({
   regions, myId, selectedId, onSelect,
-}: { regions: Region[]; myId?: number; selectedId?: number; onSelect: (id: number) => void }) {
+}: { regions: Region[]; myId?: number | undefined; selectedId?: number | undefined; onSelect: (id: number) => void }) {
   return (
     <Canvas
       shadows

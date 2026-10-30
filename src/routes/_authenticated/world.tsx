@@ -93,9 +93,9 @@ function WorldPage() {
       </header>
 
       <div className="pointer-events-none absolute top-20 right-3 rounded-lg border bg-card p-2 text-xs shadow-panel">
-        <Legend cls="bg-status-available" label={`متاحة (${counts.available ?? 0})`} />
-        <Legend cls="bg-status-reserved" label={`محجوزة (${counts.reserved ?? 0})`} />
-        <Legend cls="bg-status-unavailable" label={`غير متاحة (${counts.unavailable ?? 0})`} />
+        <Legend cls="bg-status-available" label={`متاحة (${counts["available"] ?? 0})`} />
+        <Legend cls="bg-status-reserved" label={`محجوزة (${counts["reserved"] ?? 0})`} />
+        <Legend cls="bg-status-unavailable" label={`غير متاحة (${counts["unavailable"] ?? 0})`} />
         <Legend cls="bg-status-mine" label="منطقتي" />
       </div>
 
