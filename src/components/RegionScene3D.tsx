@@ -36,13 +36,22 @@ function CameraRig({ focus }: { focus: CityFocus }) {
     const facility = STARTER_FACILITIES.find((f) => f.id === focus);
     const x = facility?.x ?? 0;
     const z = facility?.z ?? -6;
-    const distance = facility ? 33 : size.width < 600 ? 125 : 95;
+    const distance = 95;
     camera.position.set(x + distance * 0.65, distance * 0.9, z + distance * 0.8);
     controls.current?.target.set(x, 0, z);
     controls.current?.update();
     invalidate();
   }, [focus, camera, size.width, invalidate]);
-  return <MapControls ref={controls} makeDefault enableDamping minDistance={12} maxDistance={220} maxPolarAngle={1.25} />;
+  return <MapControls
+    ref={controls}
+    makeDefault
+    enableDamping
+    enableZoom={false}
+    enablePan
+    minDistance={130.5}
+    maxDistance={130.5}
+    maxPolarAngle={1.25}
+  />;
 }
 
 function Ready() {
@@ -55,6 +64,23 @@ function Surface({ position, size, color }: { position: [number, number, number]
   return <mesh position={position} rotation-x={-Math.PI / 2} receiveShadow><planeGeometry args={size} /><meshStandardMaterial color={color} roughness={0.96} /></mesh>;
 }
 
+function Road({ position, length, width, alongX }: { position: [number, number, number]; length: number; width: number; alongX: boolean }) {
+  const dashCount = Math.floor(length / 5);
+  return <group position={position}>
+    <mesh rotation-x={-Math.PI / 2} receiveShadow>
+      <planeGeometry args={alongX ? [length, width] : [width, length]} />
+      <meshStandardMaterial color="#17191b" roughness={0.94} />
+    </mesh>
+    {Array.from({ length: dashCount }, (_, i) => {
+      const offset = (i - (dashCount - 1) / 2) * 5;
+      return <mesh key={i} position={alongX ? [offset, 0.035, 0] : [0, 0.035, offset]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={alongX ? [2.6, 0.16] : [0.16, 2.6]} />
+        <meshBasicMaterial color="#f4f4ee" />
+      </mesh>;
+    })}
+  </group>;
+}
+
 export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) {
   const tex = useGroundTexture();
   return (
@@ -62,7 +88,7 @@ export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) 
       shadows
       frameloop="demand"
       dpr={[1, 1.5]}
-      camera={{ position: [65, 85, 75], fov: 42, near: 0.1, far: 600 }}
+      camera={{ position: [61.75, 85.5, 76], fov: 42, near: 0.1, far: 600 }}
     >
       <color attach="background" args={["#b6d1da"]} />
       <fog attach="fog" args={["#b6d1da", 210, 400]} />
@@ -78,9 +104,9 @@ export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) 
         <meshStandardMaterial map={tex} roughness={1} />
       </mesh>
       <Surface position={[-5, 0.025, 5]} size={[38, 28]} color="#c7ceca" />
-      <Surface position={[0, 0.04, 36]} size={[6, 40]} color="#6f7b7b" />
+      <Road position={[0, 0.04, 36]} length={40} width={6} alongX={false} />
       <Surface position={[35, 0.026, -28]} size={[27, 24]} color="#b2ad96" />
-      <Surface position={[17, 0.03, -14]} size={[40, 3]} color="#bfc5b9" />
+      <Road position={[17, 0.03, -14]} length={40} width={3} alongX />
       <Suspense fallback={null}><CityAssets3D /><Ready /></Suspense>
       <CameraRig focus={focus} />
     </Canvas>
