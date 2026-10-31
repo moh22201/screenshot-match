@@ -13,6 +13,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "سجّل الدخول إلى حسابك في VORTERRA." },
       { property: "og:title", content: "تسجيل الدخول — VORTERRA" },
       { property: "og:description", content: "سجّل الدخول لحجز منطقتك في عالم VORTERRA." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,

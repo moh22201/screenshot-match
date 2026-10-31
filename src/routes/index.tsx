@@ -8,6 +8,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "لعبة محاكاة اقتصادية وصناعية ثلاثية الأبعاد. ابدأ من خريطة العالم واحجز منطقتك." },
       { property: "og:title", content: "VORTERRA" },
       { property: "og:description", content: "ابدأ من خريطة العالم واحجز منطقة نشاطك الاقتصادي." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
