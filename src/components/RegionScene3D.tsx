@@ -17,15 +17,15 @@ function useGroundTexture() {
     c.width = c.height = 1024;
     const g = c.getContext("2d");
     if (!g) return null;
-    g.fillStyle = "#786044";
+    g.fillStyle = "#8b6b4b";
     g.fillRect(0, 0, 1024, 1024);
     let seed = 2718;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     for (let i = 0; i < 110000; i++) {
-      const r = 91 + random() * 43;
-      const green = 62 + random() * 30;
-      const b = 35 + random() * 20;
-      g.fillStyle = `rgba(${r},${green},${b},0.28)`;
+      const r = 112 + random() * 38;
+      const green = 82 + random() * 28;
+      const b = 52 + random() * 22;
+      g.fillStyle = `rgba(${r},${green},${b},0.34)`;
       g.fillRect(random() * 1024, random() * 1024, 1 + random() * 6, 1 + random() * 5);
     }
     const t = new THREE.CanvasTexture(c);
@@ -87,6 +87,19 @@ function Road({ position, length, width, alongX }: { position: [number, number, 
         <meshBasicMaterial color="#f4f4ee" />
       </mesh>;
     })}
+  </group>;
+}
+
+function CityBoundary() {
+  const half = CITY_SIZE / 2;
+  const thickness = 1.8;
+  const height = 0.55;
+  const color = "#66513a";
+  return <group>
+    <mesh position={[0, height / 2, -half]} receiveShadow><boxGeometry args={[CITY_SIZE, height, thickness]} /><meshStandardMaterial color={color} roughness={1} /></mesh>
+    <mesh position={[0, height / 2, half]} receiveShadow><boxGeometry args={[CITY_SIZE, height, thickness]} /><meshStandardMaterial color={color} roughness={1} /></mesh>
+    <mesh position={[-half, height / 2, 0]} receiveShadow><boxGeometry args={[thickness, height, CITY_SIZE]} /><meshStandardMaterial color={color} roughness={1} /></mesh>
+    <mesh position={[half, height / 2, 0]} receiveShadow><boxGeometry args={[thickness, height, CITY_SIZE]} /><meshStandardMaterial color={color} roughness={1} /></mesh>
   </group>;
 }
 
@@ -158,11 +171,10 @@ export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) 
       <NaturalLandscape />
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[CITY_SIZE, CITY_SIZE]} />
-        <meshStandardMaterial map={tex} roughness={1} />
+        <meshStandardMaterial map={tex} color="#b89a76" roughness={1} />
       </mesh>
-      <Surface position={[-5, 0.025, 5]} size={[38, 28]} color="#c7ceca" />
+      <CityBoundary />
       <Road position={[0, 0.04, 36]} length={40} width={6} alongX={false} />
-      <Surface position={[35, 0.026, -28]} size={[27, 24]} color="#b2ad96" />
       <Road position={[17, 0.03, -14]} length={40} width={3} alongX />
       <Suspense fallback={null}><CityAssets3D /><Ready /></Suspense>
       <CameraRig focus={focus} />
