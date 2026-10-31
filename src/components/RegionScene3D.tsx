@@ -12,14 +12,16 @@ function useGroundTexture() {
     c.width = c.height = 1024;
     const g = c.getContext("2d");
     if (!g) return null;
-    g.fillStyle = "#889b63";
+    g.fillStyle = "#a58a65";
     g.fillRect(0, 0, 1024, 1024);
     let seed = 2718;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    for (let i = 0; i < 95000; i++) {
-      const v = 85 + random() * 55;
-      g.fillStyle = `rgba(${v + 20},${v + 37},${v - 15},0.3)`;
-      g.fillRect(random() * 1024, random() * 1024, 1 + random() * 5, 1 + random() * 4);
+    for (let i = 0; i < 105000; i++) {
+      const v = 75 + random() * 65;
+      const r = 112 + random() * 35;
+      const green = 88 + random() * 35;
+      g.fillStyle = `rgba(${r},${green},${v},0.28)`;
+      g.fillRect(random() * 1024, random() * 1024, 1 + random() * 6, 1 + random() * 5);
     }
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -50,6 +52,7 @@ function CameraRig({ focus }: { focus: CityFocus }) {
     enablePan
     minDistance={130.5}
     maxDistance={130.5}
+    minPolarAngle={1.25}
     maxPolarAngle={1.25}
   />;
 }
@@ -81,6 +84,26 @@ function Road({ position, length, width, alongX }: { position: [number, number, 
   </group>;
 }
 
+function NaturalLandscape() {
+  const hills = [
+    [-205, 5, -165, 62, 22, 48], [-130, 3, -225, 78, 18, 42],
+    [10, 4, -235, 90, 24, 48], [165, 5, -190, 72, 25, 52],
+    [220, 4, -65, 55, 20, 78], [215, 4, 125, 72, 23, 58],
+    [90, 3, 215, 85, 18, 48], [-90, 4, 220, 78, 24, 55],
+    [-220, 4, 85, 58, 20, 76], [-220, 3, -65, 48, 18, 62],
+  ] as const;
+  return <group>
+    <mesh rotation-x={-Math.PI / 2} position={[0, -0.12, 0]} receiveShadow>
+      <planeGeometry args={[700, 700]} />
+      <meshStandardMaterial color="#71875a" roughness={1} />
+    </mesh>
+    {hills.map(([x, y, z, sx, sy, sz], i) => <mesh key={i} position={[x, y, z]} scale={[sx, sy, sz]} receiveShadow>
+      <sphereGeometry args={[1, 24, 16]} />
+      <meshStandardMaterial color={i % 2 ? "#7d8e5c" : "#899568"} roughness={1} />
+    </mesh>)}
+  </group>;
+}
+
 export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) {
   const tex = useGroundTexture();
   return (
@@ -88,17 +111,18 @@ export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) 
       shadows
       frameloop="demand"
       dpr={[1, 1.5]}
-      camera={{ position: [61.75, 85.5, 76], fov: 42, near: 0.1, far: 600 }}
+      camera={{ position: [61.75, 85.5, 76], fov: 42, near: 0.1, far: 900 }}
     >
       <color attach="background" args={["#b6d1da"]} />
-      <fog attach="fog" args={["#b6d1da", 210, 400]} />
+      <fog attach="fog" args={["#b6d1da", 250, 560]} />
       <hemisphereLight args={["#eaf5ff", "#6f794f", 1.1]} />
       <directionalLight position={[-45, 65, 35]} intensity={2.4} castShadow shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-80} shadow-camera-right={80} shadow-camera-top={80} shadow-camera-bottom={-80} shadow-bias={-0.0003} />
+        shadow-camera-left={-100} shadow-camera-right={100} shadow-camera-top={100} shadow-camera-bottom={-100} shadow-bias={-0.0003} />
       <Environment>
         <Lightformer intensity={1.5} position={[0, 8, 0]} scale={[20, 20, 1]} />
         <Lightformer intensity={2} color="#c5e7f1" position={[20, 15, 10]} scale={[30, 30, 1]} />
       </Environment>
+      <NaturalLandscape />
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[CITY_SIZE, CITY_SIZE]} />
         <meshStandardMaterial map={tex} roughness={1} />
