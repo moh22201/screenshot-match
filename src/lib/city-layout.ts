@@ -1,4 +1,4 @@
-export const CITY_SIZE = 180;
+export const CITY_SIZE = 210;
 export const STARTER_FACILITIES = [
   { id: "commercial", label: "المركز التجاري", x: 0, z: 0 },
   { id: "recruitment", label: "مركز توظيف العمال", x: -16, z: 4 },
