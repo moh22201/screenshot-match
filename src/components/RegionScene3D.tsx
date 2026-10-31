@@ -17,14 +17,14 @@ function useGroundTexture() {
     c.width = c.height = 1024;
     const g = c.getContext("2d");
     if (!g) return null;
-    g.fillStyle = "#a58a65";
+    g.fillStyle = "#786044";
     g.fillRect(0, 0, 1024, 1024);
     let seed = 2718;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     for (let i = 0; i < 110000; i++) {
-      const r = 105 + random() * 55;
-      const green = 78 + random() * 38;
-      const b = 48 + random() * 25;
+      const r = 91 + random() * 43;
+      const green = 62 + random() * 30;
+      const b = 35 + random() * 20;
       g.fillStyle = `rgba(${r},${green},${b},0.28)`;
       g.fillRect(random() * 1024, random() * 1024, 1 + random() * 6, 1 + random() * 5);
     }
