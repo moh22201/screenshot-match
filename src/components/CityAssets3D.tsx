@@ -1,4 +1,4 @@
-import { useGLTF, Html } from "@react-three/drei";
+import { useGLTF, Text } from "@react-three/drei";
 import { useMemo } from "react";
 import * as THREE from "three";
 import commercial from "@/assets/models/commercial-center.glb.asset.json";
@@ -27,12 +27,6 @@ function Model({ url, height, position = [0, 0, 0], rotation = 0 }: { url: strin
   return <group position={position} rotation-y={rotation}><primitive object={clone} /></group>;
 }
 
-function Label({ text, position }: { text: string; position: [number, number, number] }) {
-  return <Html position={position} center distanceFactor={100} zIndexRange={[5, 0]} style={{ pointerEvents: "none" }}>
-    <div className="whitespace-nowrap rounded-md border bg-card px-2 py-1 text-xs text-foreground shadow-panel">{text}</div>
-  </Html>;
-}
-
 function GlassFacade({ width, height, z }: { width: number; height: number; z: number }) {
   return <group position={[0, height / 2 + 0.3, z]}>
     <mesh><boxGeometry args={[width, height, 0.08]} /><meshPhysicalMaterial color="#75acbb" metalness={0.55} roughness={0.12} clearcoat={1} /></mesh>
@@ -41,28 +35,40 @@ function GlassFacade({ width, height, z }: { width: number; height: number; z: n
   </group>;
 }
 
+function BuildingName({ children, position, size }: { children: string; position: [number, number, number]; size: number }) {
+  return <Text
+    position={position}
+    fontSize={size}
+    color="#f7f7f2"
+    outlineColor="#172326"
+    outlineWidth={0.045}
+    anchorX="center"
+    anchorY="middle"
+    maxWidth={8}
+    textAlign="center"
+  >{children}</Text>;
+}
+
 export default function CityAssets3D() {
   return <group>
     <group position={[0, 0.12, 0]}>
       <Model url={commercial.url} height={14} />
       <GlassFacade width={7.4} height={11.5} z={3.85} />
-      <Label text="المركز التجاري" position={[0, 16, 0]} />
+      <BuildingName position={[0, 8.5, 4.02]} size={0.85}>COMMERCIAL CENTER</BuildingName>
     </group>
     <group position={[-16, 0.12, 4]}>
       <Model url={recruitment.url} height={8} />
       <GlassFacade width={4.5} height={6.5} z={2.8} />
-      <Label text="مركز توظيف العمال" position={[0, 10, 0]} />
+      <BuildingName position={[0, 5.1, 2.98]} size={0.48}>RECRUITMENT CENTER</BuildingName>
     </group>
     {Array.from({ length: 30 }, (_, i) => {
       const angle = i * 2.39996;
       const radius = 3 + Math.sqrt(i) * 2.2;
       return <Model key={`tree-${i}`} url={i % 3 === 0 ? pine.url : oak.url} height={5 + (i % 5)} position={[-38 + Math.cos(angle) * radius, 0, -31 + Math.sin(angle) * radius]} rotation={angle} />;
     })}
-    <Label text="الغابة" position={[-38, 10, -31]} />
     <group position={[35, 0, -28]}>
       {[[-9, 0, -6], [0, 0, -9], [8, 0, -5]].map((p, i) => <Model key={i} url={cliff.url} height={6 + i} position={p as [number, number, number]} rotation={i * 0.55} />)}
       {Array.from({ length: 10 }, (_, i) => <Model key={`rock-${i}`} url={rock.url} height={1.2 + i % 3} position={[(i % 4) * 3 - 5, 0, Math.floor(i / 4) * 3]} rotation={i * 1.3} />)}
-      <Label text="المحجرة" position={[0, 10, 0]} />
     </group>
     {[[-7, 0.15, 12], [0, 0.15, 13], [7, 0.15, 12]].map((p, i) => <group key={i} position={p as [number, number, number]}>
       <Model url={parasol.url} height={3} />
