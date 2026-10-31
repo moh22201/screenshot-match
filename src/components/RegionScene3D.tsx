@@ -6,6 +6,11 @@ import type { MapControls as MapControlsType } from "three-stdlib";
 import CityAssets3D from "@/components/CityAssets3D";
 import { CITY_SIZE, STARTER_FACILITIES, type CityFocus } from "@/lib/city-layout";
 
+function seededNoise(x: number, z: number) {
+  const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
+  return (n - Math.floor(n)) * 2 - 1;
+}
+
 function useGroundTexture() {
   return useMemo(() => {
     const c = document.createElement("canvas");
@@ -16,11 +21,11 @@ function useGroundTexture() {
     g.fillRect(0, 0, 1024, 1024);
     let seed = 2718;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    for (let i = 0; i < 105000; i++) {
-      const v = 75 + random() * 65;
-      const r = 112 + random() * 35;
-      const green = 88 + random() * 35;
-      g.fillStyle = `rgba(${r},${green},${v},0.28)`;
+    for (let i = 0; i < 110000; i++) {
+      const r = 105 + random() * 55;
+      const green = 78 + random() * 38;
+      const b = 48 + random() * 25;
+      g.fillStyle = `rgba(${r},${green},${b},0.28)`;
       g.fillRect(random() * 1024, random() * 1024, 1 + random() * 6, 1 + random() * 5);
     }
     const t = new THREE.CanvasTexture(c);
@@ -48,10 +53,11 @@ function CameraRig({ focus }: { focus: CityFocus }) {
     ref={controls}
     makeDefault
     enableDamping
-    enableZoom={false}
+    enableZoom
+    zoomSpeed={0.8}
+    minDistance={58}
+    maxDistance={215}
     enablePan
-    minDistance={130.5}
-    maxDistance={130.5}
     minPolarAngle={1.25}
     maxPolarAngle={1.25}
   />;
@@ -85,39 +91,66 @@ function Road({ position, length, width, alongX }: { position: [number, number, 
 }
 
 function NaturalLandscape() {
-  const hills = [
-    [-205, 5, -165, 62, 22, 48], [-130, 3, -225, 78, 18, 42],
-    [10, 4, -235, 90, 24, 48], [165, 5, -190, 72, 25, 52],
-    [220, 4, -65, 55, 20, 78], [215, 4, 125, 72, 23, 58],
-    [90, 3, 215, 85, 18, 48], [-90, 4, 220, 78, 24, 55],
-    [-220, 4, 85, 58, 20, 76], [-220, 3, -65, 48, 18, 62],
-  ] as const;
+  const terrain = useMemo(() => {
+    const geometry = new THREE.PlaneGeometry(760, 760, 120, 120);
+    const positions = geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i);
+      const z = -positions.getY(i);
+      const broad = Math.sin(x * 0.009) * Math.cos(z * 0.008) * 2.8;
+      const detail = Math.sin(x * 0.035 + z * 0.021) * 0.7 + seededNoise(Math.round(x / 5), Math.round(z / 5)) * 0.55;
+      positions.setZ(i, broad + detail);
+    }
+    geometry.computeVertexNormals();
+    return geometry;
+  }, []);
+  const ridges = useMemo(() => Array.from({ length: 9 }, (_, i) => {
+    const points: THREE.Vector2[] = [];
+    for (let j = 0; j <= 24; j++) {
+      const x = -370 + j * (740 / 24);
+      const peak = 34 + Math.sin(j * 0.72 + i * 0.8) * 13 + seededNoise(j, i) * 8;
+      points.push(new THREE.Vector2(x, peak));
+    }
+    return points;
+  }), []);
   return <group>
-    <mesh rotation-x={-Math.PI / 2} position={[0, -0.12, 0]} receiveShadow>
-      <planeGeometry args={[700, 700]} />
-      <meshStandardMaterial color="#71875a" roughness={1} />
+    <mesh geometry={terrain} rotation-x={-Math.PI / 2} position={[0, -0.2, 0]} receiveShadow>
+      <meshStandardMaterial color="#71865a" roughness={1} />
     </mesh>
-    {hills.map(([x, y, z, sx, sy, sz], i) => <mesh key={i} position={[x, y, z]} scale={[sx, sy, sz]} receiveShadow>
-      <sphereGeometry args={[1, 24, 16]} />
-      <meshStandardMaterial color={i % 2 ? "#7d8e5c" : "#899568"} roughness={1} />
+    {ridges.map((points, i) => <mesh key={i} position={[0, -1, -300 - i * 9]} receiveShadow>
+      <shapeGeometry args={[(() => {
+        const shape = new THREE.Shape();
+        shape.moveTo(-390, -20);
+        points.forEach((p, j) => j === 0 ? shape.lineTo(p.x, p.y) : shape.lineTo(p.x, p.y));
+        shape.lineTo(390, -20);
+        shape.closePath();
+        return shape;
+      })()]} />
+      <meshStandardMaterial color={i % 2 ? "#697d62" : "#78866e"} roughness={1} side={THREE.DoubleSide} />
     </mesh>)}
+    {Array.from({ length: 190 }, (_, i) => {
+      const x = seededNoise(i, 7) * 340;
+      const z = seededNoise(i, 19) * 340;
+      if (Math.abs(x) < 125 && Math.abs(z) < 125) return null;
+      const h = 7 + Math.abs(seededNoise(i, 31)) * 8;
+      return <group key={i} position={[x, 0, z]}>
+        <mesh position={[0, h * 0.38, 0]}><cylinderGeometry args={[0.35, 0.65, h * 0.78, 9]} /><meshStandardMaterial color="#594431" roughness={1} /></mesh>
+        {[0, 1, 2].map((k) => <mesh key={k} position={[(k - 1) * 0.65, h * (0.62 + k * 0.075), 0]} scale={[1.15 - k * 0.18, 1.15 - k * 0.12, 1.05]}><sphereGeometry args={[h * 0.29, 14, 11]} /><meshStandardMaterial color={["#355b36", "#416b3d", "#527744"][k]} roughness={1} /></mesh>)}
+      </group>;
+    })}
   </group>;
 }
 
 export default function RegionScene3D({ focus = "all" }: { focus?: CityFocus }) {
   const tex = useGroundTexture();
   return (
-    <Canvas
-      shadows
-      frameloop="demand"
-      dpr={[1, 1.5]}
-      camera={{ position: [61.75, 85.5, 76], fov: 42, near: 0.1, far: 900 }}
-    >
+    <Canvas shadows frameloop="demand" dpr={[1, 1.5]}
+      camera={{ position: [61.75, 85.5, 76], fov: 42, near: 0.1, far: 1200 }}>
       <color attach="background" args={["#b6d1da"]} />
-      <fog attach="fog" args={["#b6d1da", 250, 560]} />
+      <fog attach="fog" args={["#b6d1da", 360, 900]} />
       <hemisphereLight args={["#eaf5ff", "#6f794f", 1.1]} />
       <directionalLight position={[-45, 65, 35]} intensity={2.4} castShadow shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-100} shadow-camera-right={100} shadow-camera-top={100} shadow-camera-bottom={-100} shadow-bias={-0.0003} />
+        shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} shadow-bias={-0.0003} />
       <Environment>
         <Lightformer intensity={1.5} position={[0, 8, 0]} scale={[20, 20, 1]} />
         <Lightformer intensity={2} color="#c5e7f1" position={[20, 15, 10]} scale={[30, 30, 1]} />
