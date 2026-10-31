@@ -3,13 +3,9 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import commercial from "@/assets/models/commercial-center.glb.asset.json";
 import recruitment from "@/assets/models/recruitment-center.glb.asset.json";
-import oak from "@/assets/models/forest-oak.glb.asset.json";
-import pine from "@/assets/models/forest-pine.glb.asset.json";
-import rock from "@/assets/models/quarry-rock.glb.asset.json";
-import cliff from "@/assets/models/quarry-cliff.glb.asset.json";
 import parasol from "@/assets/models/rest-parasol.glb.asset.json";
 
-function Model({ url, height, position = [0, 0, 0], rotation = 0, naturalTint }: { url: string; height: number; position?: [number, number, number]; rotation?: number; naturalTint?: string }) {
+function Model({ url, height, position = [0, 0, 0], rotation = 0 }: { url: string; height: number; position?: [number, number, number]; rotation?: number }) {
   const { scene } = useGLTF(url);
   const clone = useMemo(() => {
     const object = scene.clone(true);
@@ -20,25 +16,49 @@ function Model({ url, height, position = [0, 0, 0], rotation = 0, naturalTint }:
     object.scale.setScalar(factor);
     object.position.set(-center.x * factor, -bounds.min.y * factor, -center.z * factor);
     object.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if (naturalTint && child.material) {
-          const tintMaterial = (material: THREE.Material) => {
-            const copy = material.clone();
-            if ("color" in copy && (copy as THREE.MeshStandardMaterial).color) {
-              (copy as THREE.MeshStandardMaterial).color.multiply(new THREE.Color(naturalTint));
-            }
-            if ("roughness" in copy) (copy as THREE.MeshStandardMaterial).roughness = 0.88;
-            return copy;
-          };
-          child.material = Array.isArray(child.material) ? child.material.map(tintMaterial) : tintMaterial(child.material);
-        }
-      }
+      if (child instanceof THREE.Mesh) { child.castShadow = true; child.receiveShadow = true; }
     });
     return object;
-  }, [scene, height, naturalTint]);
+  }, [scene, height]);
   return <group position={position} rotation-y={rotation}><primitive object={clone} /></group>;
+}
+
+function OrganicTree({ position, scale = 1, pine = false }: { position: [number, number, number]; scale?: number; pine?: boolean }) {
+  const clusters = pine ? 4 : 5;
+  return <group position={position} scale={scale}>
+    <mesh position={[0, 2.2, 0]} castShadow receiveShadow>
+      <cylinderGeometry args={[0.18, 0.42, 4.4, 10]} />
+      <meshStandardMaterial color="#60452e" roughness={1} />
+    </mesh>
+    {Array.from({ length: clusters }, (_, i) => {
+      const angle = i * 2.39996;
+      const y = pine ? 3.2 + i * 0.82 : 4.0 + (i % 2) * 0.7;
+      const radius = pine ? 1.55 - i * 0.18 : 1.65;
+      return <mesh key={i} position={[Math.cos(angle) * 0.35, y, Math.sin(angle) * 0.35]}
+        scale={pine ? [radius * 0.8, 1.8 - i * 0.18, radius * 0.8] : [radius, 1.35 + (i % 3) * 0.2, radius * 0.92]}
+        castShadow receiveShadow>
+        <sphereGeometry args={[1, 18, 14]} />
+        <meshStandardMaterial color={pine ? "#315b37" : ["#477344", "#56814a", "#3f693d"][i % 3]} roughness={1} />
+      </mesh>;
+    })}
+  </group>;
+}
+
+function NaturalRock({ position, scale = 1, color = "#877b68" }: { position: [number, number, number]; scale?: number; color?: string }) {
+  const geometry = useMemo(() => {
+    const g = new THREE.IcosahedronGeometry(1, 3);
+    const p = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < p.count; i++) {
+      const n = 1 + Math.sin(p.getX(i) * 13.1 + p.getY(i) * 8.7 + p.getZ(i) * 11.3) * 0.11
+        + Math.cos(p.getX(i) * 19 + p.getZ(i) * 7) * 0.055;
+      p.setXYZ(i, p.getX(i) * n, p.getY(i) * n, p.getZ(i) * n);
+    }
+    g.computeVertexNormals();
+    return g;
+  }, []);
+  return <mesh geometry={geometry} position={position} scale={scale} castShadow receiveShadow>
+    <meshStandardMaterial color={color} roughness={0.98} flatShading={false} />
+  </mesh>;
 }
 
 function GlassFacade({ width, height, z }: { width: number; height: number; z: number }) {
@@ -50,17 +70,8 @@ function GlassFacade({ width, height, z }: { width: number; height: number; z: n
 }
 
 function BuildingName({ children, position, size }: { children: string; position: [number, number, number]; size: number }) {
-  return <Text
-    position={position}
-    fontSize={size}
-    color="#f7f7f2"
-    outlineColor="#172326"
-    outlineWidth={0.045}
-    anchorX="center"
-    anchorY="middle"
-    maxWidth={8}
-    textAlign="center"
-  >{children}</Text>;
+  return <Text position={position} fontSize={size} color="#f7f7f2" outlineColor="#172326" outlineWidth={0.045}
+    anchorX="center" anchorY="middle" maxWidth={8} textAlign="center">{children}</Text>;
 }
 
 export default function CityAssets3D() {
@@ -78,11 +89,16 @@ export default function CityAssets3D() {
     {Array.from({ length: 30 }, (_, i) => {
       const angle = i * 2.39996;
       const radius = 3 + Math.sqrt(i) * 2.2;
-      return <Model key={`tree-${i}`} url={i % 3 === 0 ? pine.url : oak.url} height={5 + (i % 5)} position={[-38 + Math.cos(angle) * radius, 0, -31 + Math.sin(angle) * radius]} rotation={angle} naturalTint="#a8bd82" />;
+      return <OrganicTree key={i} position={[-38 + Math.cos(angle) * radius, 0, -31 + Math.sin(angle) * radius]}
+        scale={0.85 + (i % 5) * 0.12} pine={i % 3 === 0} />;
     })}
     <group position={[35, 0, -28]}>
-      {[[-9, 0, -6], [0, 0, -9], [8, 0, -5]].map((p, i) => <Model key={i} url={cliff.url} height={6 + i} position={p as [number, number, number]} rotation={i * 0.55} naturalTint="#b6a58a" />)}
-      {Array.from({ length: 10 }, (_, i) => <Model key={`rock-${i}`} url={rock.url} height={1.2 + i % 3} position={[(i % 4) * 3 - 5, 0, Math.floor(i / 4) * 3]} rotation={i * 1.3} naturalTint="#b7aa96" />)}
+      <NaturalRock position={[-9, 2.5, -6]} scale={[5.2, 7.2, 4.4] as any} color="#a99b83" />
+      <NaturalRock position={[0, 3.1, -9]} scale={[6.4, 8.5, 5.2] as any} color="#91836f" />
+      <NaturalRock position={[8, 2.2, -5]} scale={[4.8, 6.3, 4.1] as any} color="#b3a48b" />
+      {Array.from({ length: 18 }, (_, i) => <NaturalRock key={i}
+        position={[(i % 5) * 3.1 - 6, 0.8 + (i % 3) * 0.35, Math.floor(i / 5) * 2.8 - 2]}
+        scale={0.9 + (i % 4) * 0.35} color={["#a99b83", "#8e806d", "#b5a58c"][i % 3]} />)}
     </group>
     {[[-7, 0.15, 12], [0, 0.15, 13], [7, 0.15, 12]].map((p, i) => <group key={i} position={p as [number, number, number]}>
       <Model url={parasol.url} height={3} />
