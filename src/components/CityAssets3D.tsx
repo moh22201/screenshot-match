@@ -9,7 +9,7 @@ import rock from "@/assets/models/quarry-rock.glb.asset.json";
 import cliff from "@/assets/models/quarry-cliff.glb.asset.json";
 import parasol from "@/assets/models/rest-parasol.glb.asset.json";
 
-function Model({ url, height, position = [0, 0, 0], rotation = 0 }: { url: string; height: number; position?: [number, number, number]; rotation?: number }) {
+function Model({ url, height, position = [0, 0, 0], rotation = 0, naturalTint }: { url: string; height: number; position?: [number, number, number]; rotation?: number; naturalTint?: string }) {
   const { scene } = useGLTF(url);
   const clone = useMemo(() => {
     const object = scene.clone(true);
@@ -20,10 +20,24 @@ function Model({ url, height, position = [0, 0, 0], rotation = 0 }: { url: strin
     object.scale.setScalar(factor);
     object.position.set(-center.x * factor, -bounds.min.y * factor, -center.z * factor);
     object.traverse((child) => {
-      if (child instanceof THREE.Mesh) { child.castShadow = true; child.receiveShadow = true; }
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (naturalTint && child.material) {
+          const tintMaterial = (material: THREE.Material) => {
+            const copy = material.clone();
+            if ("color" in copy && (copy as THREE.MeshStandardMaterial).color) {
+              (copy as THREE.MeshStandardMaterial).color.multiply(new THREE.Color(naturalTint));
+            }
+            if ("roughness" in copy) (copy as THREE.MeshStandardMaterial).roughness = 0.88;
+            return copy;
+          };
+          child.material = Array.isArray(child.material) ? child.material.map(tintMaterial) : tintMaterial(child.material);
+        }
+      }
     });
     return object;
-  }, [scene, height]);
+  }, [scene, height, naturalTint]);
   return <group position={position} rotation-y={rotation}><primitive object={clone} /></group>;
 }
 
@@ -64,11 +78,11 @@ export default function CityAssets3D() {
     {Array.from({ length: 30 }, (_, i) => {
       const angle = i * 2.39996;
       const radius = 3 + Math.sqrt(i) * 2.2;
-      return <Model key={`tree-${i}`} url={i % 3 === 0 ? pine.url : oak.url} height={5 + (i % 5)} position={[-38 + Math.cos(angle) * radius, 0, -31 + Math.sin(angle) * radius]} rotation={angle} />;
+      return <Model key={`tree-${i}`} url={i % 3 === 0 ? pine.url : oak.url} height={5 + (i % 5)} position={[-38 + Math.cos(angle) * radius, 0, -31 + Math.sin(angle) * radius]} rotation={angle} naturalTint="#a8bd82" />;
     })}
     <group position={[35, 0, -28]}>
-      {[[-9, 0, -6], [0, 0, -9], [8, 0, -5]].map((p, i) => <Model key={i} url={cliff.url} height={6 + i} position={p as [number, number, number]} rotation={i * 0.55} />)}
-      {Array.from({ length: 10 }, (_, i) => <Model key={`rock-${i}`} url={rock.url} height={1.2 + i % 3} position={[(i % 4) * 3 - 5, 0, Math.floor(i / 4) * 3]} rotation={i * 1.3} />)}
+      {[[-9, 0, -6], [0, 0, -9], [8, 0, -5]].map((p, i) => <Model key={i} url={cliff.url} height={6 + i} position={p as [number, number, number]} rotation={i * 0.55} naturalTint="#b6a58a" />)}
+      {Array.from({ length: 10 }, (_, i) => <Model key={`rock-${i}`} url={rock.url} height={1.2 + i % 3} position={[(i % 4) * 3 - 5, 0, Math.floor(i / 4) * 3]} rotation={i * 1.3} naturalTint="#b7aa96" />)}
     </group>
     {[[-7, 0.15, 12], [0, 0.15, 13], [7, 0.15, 12]].map((p, i) => <group key={i} position={p as [number, number, number]}>
       <Model url={parasol.url} height={3} />
