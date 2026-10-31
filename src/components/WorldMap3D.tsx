@@ -1,66 +1,57 @@
-import { Canvas } from "@react-three/fiber";
-import { MapControls, Environment, Lightformer } from "@react-three/drei";
-import { useState } from "react";
-import { GRID_W, GRID_H, type Region } from "@/lib/regions";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { MapControls, useTexture } from "@react-three/drei";
+import { Suspense, useEffect, useRef } from "react";
+import * as THREE from "three";
+import type { Region } from "@/lib/regions";
+import { WORLD_WIDTH, WORLD_DEPTH, geographicPosition, worldCell } from "@/lib/world-geography";
+import earth from "@/assets/earth.jpg.asset.json";
 
-// Tile colours for the 3D scene (WebGL needs literal colours, not CSS tokens).
-const COLORS = {
-  available: "#6aa77a",
-  reserved: "#b5533f",
-  unavailable: "#4a4640",
-  mine: "#e0a63a",
-  selected: "#f3e3b5",
-};
-const TILE = 1;
-const GAP = 0.08;
+function GeographicSurface({ regions, onSelect }: { regions: Region[]; onSelect: (id: number) => void }) {
+  const texture = useTexture(earth.url);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const ready = useRef(false);
+  useFrame(({ gl }) => {
+    if (!ready.current) {
+      gl.domElement.parentElement?.setAttribute("data-scene-ready", "1");
+      ready.current = true;
+    }
+  });
+  return <mesh rotation-x={-Math.PI / 2} onClick={(event) => {
+    if (!event.uv || event.delta > 5) return;
+    event.stopPropagation();
+    const cell = worldCell(event.uv.x, event.uv.y);
+    const region = regions.find((r) => r.grid_x === cell.grid_x && r.grid_y === cell.grid_y);
+    if (region) onSelect(region.id);
+  }} onPointerOver={() => { document.body.style.cursor = "crosshair"; }} onPointerOut={() => { document.body.style.cursor = ""; }}>
+    <planeGeometry args={[WORLD_WIDTH, WORLD_DEPTH]} />
+    <meshBasicMaterial map={texture} />
+  </mesh>;
+}
 
-function Tile({ r, mine, selected, onSelect }: { r: Region; mine: boolean; selected: boolean; onSelect: () => void }) {
-  const [hover, setHover] = useState(false);
-  const base = mine ? COLORS.mine : COLORS[r.status as keyof typeof COLORS] ?? COLORS.unavailable;
-  const h = selected ? 0.5 : hover ? 0.3 : r.status === "unavailable" ? 0.1 : 0.2;
-  const x = (r.grid_x - GRID_W / 2 + 0.5) * TILE;
-  const z = (r.grid_y - GRID_H / 2 + 0.5) * TILE;
-  return (
-    <mesh
-      position={[x, h / 2, z]}
-      castShadow
-      receiveShadow
-      onClick={(e) => { e.stopPropagation(); onSelect(); }}
-      onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
-      onPointerOut={() => setHover(false)}
-    >
-      <boxGeometry args={[TILE - GAP, h, TILE - GAP]} />
-      <meshStandardMaterial color={selected ? COLORS.selected : base} roughness={0.75} metalness={0.05} />
+function LocationMarker({ region, mine }: { region: Region; mine?: boolean }) {
+  const { x, z } = geographicPosition(region.grid_x, region.grid_y);
+  return <group position={[x, 0.08, z]}>
+    <mesh rotation-x={-Math.PI / 2}>
+      <ringGeometry args={[0.22, 0.28, 40]} />
+      <meshBasicMaterial color={mine ? "#f5c565" : "#ffffff"} depthTest={false} />
     </mesh>
-  );
+    <mesh position={[0, 0.2, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshBasicMaterial color={mine ? "#f5c565" : "#ffffff"} /></mesh>
+  </group>;
 }
 
 export default function WorldMap3D({
   regions, myId, selectedId, onSelect,
 }: { regions: Region[]; myId?: number | undefined; selectedId?: number | undefined; onSelect: (id: number) => void }) {
+  useEffect(() => () => { document.body.style.cursor = ""; }, []);
   return (
     <Canvas
-      shadows
-      camera={{ position: [0, 14, 12], fov: 45 }}
-      onCreated={({ gl }) => gl.domElement.parentElement?.setAttribute("data-scene-ready", "1")}
+      frameloop="demand"
+      camera={{ position: [0, 27, 10], fov: 48 }}
     >
-      <color attach="background" args={["#1d1a16"]} />
-      <fog attach="fog" args={["#1d1a16", 25, 45]} />
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[8, 14, 6]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={10} shadow-camera-bottom={-10} />
-      <Environment>
-        <Lightformer intensity={1.5} position={[0, 6, 0]} scale={[12, 12, 1]} />
-        <Lightformer intensity={0.6} color="#d9a868" position={[-6, 2, 0]} rotation-y={Math.PI / 2} scale={[20, 2, 1]} />
-      </Environment>
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[GRID_W + 4, GRID_H + 4]} />
-        <meshStandardMaterial color="#2a2621" roughness={1} />
-      </mesh>
-      {regions.map((r) => (
-        <Tile key={r.id} r={r} mine={r.id === myId} selected={r.id === selectedId} onSelect={() => onSelect(r.id)} />
-      ))}
-      <MapControls makeDefault enableDamping minDistance={5} maxDistance={30} maxPolarAngle={1.2} />
+      <color attach="background" args={["#071e2a"]} />
+      <Suspense fallback={null}><GeographicSurface regions={regions} onSelect={onSelect} /></Suspense>
+      {regions.filter((r) => r.id === selectedId || r.id === myId).map((r) => <LocationMarker key={r.id} region={r} mine={r.id === myId} />)}
+      <MapControls makeDefault enableDamping enableRotate={false} minDistance={2} maxDistance={42} maxPolarAngle={0.4} />
     </Canvas>
   );
 }

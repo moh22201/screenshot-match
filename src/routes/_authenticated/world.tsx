@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { regionsQuery, STATUS_LABEL, claimErrorMessage, type Region } from "@/lib/regions";
+import { locationLabel } from "@/lib/world-geography";
 
 const WorldMap3D = lazy(() => import("@/components/WorldMap3D"));
 
@@ -14,7 +15,9 @@ export const Route = createFileRoute("/_authenticated/world")({
       { title: "خريطة العالم — VORTERRA" },
       { name: "description", content: "اختر منطقة البداية على خريطة عالم VORTERRA." },
       { property: "og:title", content: "خريطة العالم — VORTERRA" },
-      { property: "og:description", content: "مربعات قابلة للاختيار لبدء نشاطك الاقتصادي." },
+      { property: "og:description", content: "اختر موقع مدينتك على خريطة جغرافية للعالم." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(regionsQuery),
@@ -51,7 +54,7 @@ function WorldPage() {
     },
     onSuccess: async (_d, id) => {
       await qc.invalidateQueries({ queryKey: ["regions"] });
-      toast.success("تم تثبيت منطقة البداية");
+      toast.success("تم تثبيت موقع مدينتك");
       navigate({ to: "/region/$id", params: { id: String(id) } });
     },
     onError: (e: Error) => {
@@ -93,19 +96,19 @@ function WorldPage() {
       </header>
 
       <div className="pointer-events-none absolute top-20 right-3 rounded-lg border bg-card p-2 text-xs shadow-panel">
-        <Legend cls="bg-status-available" label={`متاحة (${counts["available"] ?? 0})`} />
-        <Legend cls="bg-status-reserved" label={`محجوزة (${counts["reserved"] ?? 0})`} />
-        <Legend cls="bg-status-unavailable" label={`غير متاحة (${counts["unavailable"] ?? 0})`} />
-        <Legend cls="bg-status-mine" label="منطقتي" />
+          <Legend cls="bg-status-available" label={`مواقع متاحة (${counts["available"] ?? 0})`} />
+          <Legend cls="bg-status-reserved" label={`محجوزة (${counts["reserved"] ?? 0})`} />
+          <Legend cls="bg-status-unavailable" label={`غير متاحة (${counts["unavailable"] ?? 0})`} />
+          <Legend cls="bg-status-mine" label="مدينتي" />
       </div>
 
       {sel && (
-        <aside className="absolute inset-x-0 bottom-0 max-h-[60dvh] overflow-y-auto rounded-t-2xl border bg-card p-4 shadow-panel md:inset-x-auto md:bottom-4 md:left-4 md:w-96 md:rounded-2xl">
+        <aside className="absolute inset-x-0 bottom-0 max-h-[55dvh] overflow-y-auto rounded-t-lg border bg-card p-4 shadow-panel md:inset-x-auto md:bottom-4 md:left-4 md:w-96 md:rounded-lg">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="font-display text-2xl">{sel.name}</h2>
+              <h2 className="font-display text-2xl">{sel.id === mine?.id ? "موقع مدينتي" : "موقع المدينة"}</h2>
               <p className="text-xs text-muted-foreground">
-                رقم {sel.id} · الموقع ({sel.grid_x + 1}، {sel.grid_y + 1})
+                {locationLabel(sel.grid_x, sel.grid_y)}
               </p>
             </div>
             <span className="rounded-full bg-secondary px-3 py-1 text-xs">
@@ -127,12 +130,12 @@ function WorldPage() {
           <div className="mt-4 flex gap-2">
             {sel.status === "available" && !mine && (
               <Button className="flex-1" disabled={claim.isPending} onClick={() => claim.mutate(sel.id)}>
-                {claim.isPending ? "جارٍ الحجز…" : "تأكيد اختيار منطقة البداية"}
+                {claim.isPending ? "جارٍ الحجز…" : "اختيار الموقع ودخول المدينة"}
               </Button>
             )}
             {sel.id === mine?.id && (
               <Button className="flex-1" asChild>
-                <Link to="/region/$id" params={{ id: String(sel.id) }}>ادخل المنطقة</Link>
+                <Link to="/region/$id" params={{ id: String(sel.id) }}>ادخل المدينة</Link>
               </Button>
             )}
             <Button variant="secondary" onClick={() => setSelectedId(undefined)}>إغلاق</Button>
